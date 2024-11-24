@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from api.models import Room
-from .models import Reservation
+from api.models import Room, Reservation
+
 
 class RoomSerializer(serializers.ModelSerializer):
     class Meta:
