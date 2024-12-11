@@ -20,6 +20,7 @@ class Reservation(SoftDeletableModel):
     start_time = models.TimeField(default="00:00:00")
     end_time = models.TimeField(default="00:00:00")
     confirmed = models.BooleanField(default=False)
+    canceled = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.room.name} - {self.date} {self.start_time}"

@@ -6,6 +6,8 @@ from .models import Room
 from .serializers import RoomSerializer
 from .models import Reservation
 from .serializers import ReservationSerializer
+from .serializers import ReservationSerializerPost
+
 
 class Room_APIView(APIView):
     def get(self, request):
@@ -19,7 +21,8 @@ class Room_APIView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 class Room_APIView_Detail(APIView):
     def get(self, request, pk):
         room = Room.objects.get(pk=pk)
@@ -43,15 +46,17 @@ class Room_APIView_Detail(APIView):
 class Reservation_APIView(APIView):
     def get(self, request):
         reservations = Reservation.objects.all()
+
         serializer = ReservationSerializer(reservations, many=True)
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = ReservationSerializer(data=request.data)
+        serializer = ReservationSerializerPost(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class Reservation_APIView_Detail(APIView):
     def get(self, request, pk):
@@ -73,3 +78,20 @@ class Reservation_APIView_Detail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class Reservation_APIView_Confirm(APIView):
+    def post(self, request, pk):
+        reservation = Reservation.objects.get(pk=pk)
+        reservation.confirmed = True
+        reservation.save()
+        serializer = ReservationSerializer(reservation)
+        return Response(serializer.data)
+
+
+class Reservation_APIView_Cancel(APIView):
+    def post(self, request, pk):
+        reservation = Reservation.objects.get(pk=pk)
+        reservation.confirmed = False
+        reservation.canceled = True
+        reservation.save()
+        serializer = ReservationSerializer(reservation)
+        return Response(serializer.data)
