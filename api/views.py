@@ -11,12 +11,20 @@ from datetime import time, timedelta, datetime
 from .serializers import RoomSerializer, RegisterSerializer, LoginSerializer, ReservationSerializer, ReservationSerializerPost
 from .models import Reservation, Room
 
+
 class Room_APIView(APIView):
     permission_classes = [AllowAny]
+
     def get(self, request):
+        print(request.user.is_superuser)
         rooms = Room.objects.all()
         serializer = RoomSerializer(rooms, many=True)
-        return Response(serializer.data)
+        return Response({
+            "user": {
+                "is_superuser": request.user.is_superuser,
+            },
+            "rooms": serializer.data,
+        })
 
     def post(self, request):
         serializer = RoomSerializer(data=request.data)
@@ -27,6 +35,8 @@ class Room_APIView(APIView):
 
 
 class Room_APIView_Detail(APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request, pk):
         room = Room.objects.get(pk=pk)
         serializer = RoomSerializer(room)
@@ -47,6 +57,8 @@ class Room_APIView_Detail(APIView):
 
 
 class Reservation_APIView(APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request):
         reservations = Reservation.objects.all()
 
@@ -56,7 +68,6 @@ class Reservation_APIView(APIView):
     def post(self, request):
         data = request.data
 
-        # Validar que el inicio y fin estén en el rango permitido
         start_time = time.fromisoformat(data['start_time'])
         end_time = time.fromisoformat(data['end_time'])
         allowed_times = [time(h, 0) for h in range(9, 18)]
@@ -67,7 +78,6 @@ class Reservation_APIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Validar si el bloque ya está reservado
         if Reservation.objects.filter(
             room_id=data['room'],
             start_time__lt=end_time,
@@ -78,7 +88,6 @@ class Reservation_APIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Si pasa todas las validaciones, guarda la reserva
         serializer = ReservationSerializerPost(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -87,6 +96,8 @@ class Reservation_APIView(APIView):
 
 
 class Reservation_APIView_Detail(APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request, pk):
         reservation = Reservation.objects.get(pk=pk)
         serializer = ReservationSerializer(reservation)
@@ -107,6 +118,8 @@ class Reservation_APIView_Detail(APIView):
 
 
 class Reservation_APIView_Confirm(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request, pk):
         reservation = Reservation.objects.get(pk=pk)
         reservation.confirmed = True
@@ -116,6 +129,8 @@ class Reservation_APIView_Confirm(APIView):
 
 
 class Reservation_APIView_Cancel(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request, pk):
         reservation = Reservation.objects.get(pk=pk)
         reservation.confirmed = False
@@ -123,6 +138,7 @@ class Reservation_APIView_Cancel(APIView):
         reservation.save()
         serializer = ReservationSerializer(reservation)
         return Response(serializer.data)
+
 
 class RegisterAPIView(APIView):
     permission_classes = [AllowAny]
@@ -154,25 +170,24 @@ class LoginAPIView(APIView):
             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class TimeBlocksAPIView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, room_id):
-        # Define los bloques horarios de 9:00 a 18:00
+
         start_hour = 9
         end_hour = 18
         time_blocks = []
 
         for hour in range(start_hour, end_hour):
-            # Crear objetos datetime para calcular correctamente las horas
+
             start_datetime = datetime.combine(datetime.today(), time(hour, 0))
             end_datetime = start_datetime + timedelta(hours=1)
 
-            # Convertir de nuevo a objetos time
             start_time = start_datetime.time()
             end_time = end_datetime.time()
 
-            # Verificar si hay una reserva existente para este bloque
             is_reserved = Reservation.objects.filter(
                 room_id=room_id,
                 start_time__lt=end_time,

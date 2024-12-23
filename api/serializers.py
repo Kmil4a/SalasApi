@@ -29,13 +29,15 @@ class ReservationSerializer(serializers.ModelSerializer):
             'start_time',
             'end_time',
             'confirmed',
-            'canceled', 
+            'canceled',
         ]
+
 
 class ReservationSerializerPost(serializers.ModelSerializer):
     class Meta:
         model = Reservation
         fields = '__all__'
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
